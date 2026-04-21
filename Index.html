@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Clan</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;font-family:'Inter',sans-serif;color:#fff;overflow:hidden;
+background:radial-gradient(circle at top left,rgba(123,44,255,.35),transparent 30%),
+radial-gradient(circle at bottom right,rgba(0,191,255,.25),transparent 30%),
+linear-gradient(135deg,#030712,#050816,#02040a);}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{width:100%;max-width:460px;padding:44px 32px;border-radius:28px;
+background:rgba(255,255,255,.05);backdrop-filter:blur(18px);
+border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 60px rgba(0,0,0,.45);
+text-align:center}
+.hidden{display:none}
+.logo{font-family:'Orbitron';font-size:12px;letter-spacing:5px;color:#8fd3ff;margin-bottom:14px}
+h1{font-family:'Orbitron';font-size:clamp(24px,5vw,38px);margin-bottom:12px}
+h1 span{color:#7fd8ff;text-shadow:0 0 18px rgba(127,216,255,.55)}
+.btn{width:100%;border:none;border-radius:999px;padding:16px;
+color:#fff;font-weight:700;background:linear-gradient(90deg,#5b5fff,#8a2be2,#00c2ff);
+cursor:pointer;margin-top:15px}
+.input{width:100%;padding:14px;border-radius:14px;
+border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);
+color:#fff;margin-top:10px}
+.msg{margin-top:16px;min-height:22px;font-weight:600}
+.msg.ok{color:#4ade80}.msg.err{color:#ff6b6b}.msg.wait{color:#8fd3ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card" id="p1">
+<div class="logo">COSMIC CLAN</div>
+<h1>Добро пожаловать на сайт <span>Cosmic</span></h1>
+<button class="btn" onclick="go()">Продолжить</button>
+</div>
+
+<div class="card hidden" id="p2">
+<h1>Регистрация</h1>
+<input class="input" id="nick" placeholder="Ник в Mine Evo">
+<button class="btn" id="b" onclick="reg()">Зарегистрироваться</button>
+<div class="msg" id="m"></div>
+</div>
+</div>
+
+<script>
+function go(){p1.classList.add('hidden');p2.classList.remove('hidden');}
+
+async function reg(){
+let nick=document.getElementById('nick').value.trim();
+let m=document.getElementById('m');
+let b=document.getElementById('b');
+if(!nick)return;
+
+b.disabled=true;
+m.className='msg wait';
+m.innerText='⏳ Отправка запроса...';
+
+let r=await fetch(`/api?action=register&nick=${encodeURIComponent(nick)}`);
+let d=await r.json();
+
+if(!d.ok){
+m.className='msg err';
+m.innerText='Ошибка';
+b.disabled=false;
+return;
+}
+
+m.innerText='⏳ Проверяю ник в клане...';
+
+let tries=0;
+let timer=setInterval(async()=>{
+tries++;
+let s=await fetch(`/api?action=status&nick=${encodeURIComponent(nick)}`);
+let sd=await s.json();
+
+if(sd.status==="approved"){
+clearInterval(timer);
+m.className='msg ok';
+m.innerText='✅ Ты в клане!';
+}
+if(sd.status==="rejected"){
+clearInterval(timer);
+m.className='msg err';
+m.innerText='❌ Тебя нет в клане';
+b.disabled=false;
+}
+if(tries>20){
+clearInterval(timer);
+m.className='msg err';
+m.innerText='❌ Таймаут';
+b.disabled=false;
+}
+},4000);
+}
+</script>
+</body>
+</html>
